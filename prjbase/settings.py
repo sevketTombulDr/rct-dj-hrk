@@ -9,12 +9,18 @@ https://docs.djangoproject.com/en/3.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
-
+import django_heroku
+import dotenv
+import os
 from pathlib import Path
-
+import dj_database_url
+from django.conf import settings
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+dotenv_file = os.path.join(BASE_DIR, ".env")
+if os.path.isfile(dotenv_file):
+    dotenv.load_dotenv(dotenv_file)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
@@ -22,9 +28,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'ukujmh_8e(=_g@5npr*=69*7zq5$jxj%(l!kzaqv)2_c7_@xb_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = ['react-dj-todoapp.herokuapp.com', '127.0.0.1:8000', 'localhost']
+ALLOWED_HOSTS = ['*']
+
 
 # Application definition
 
@@ -43,6 +51,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+	'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -56,7 +65,7 @@ ROOT_URLCONF = 'prjbase.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'build')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -74,12 +83,18 @@ WSGI_APPLICATION = 'prjbase.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DATABASES = {}
+DATABASES['default'] = dj_database_url.config(conn_max_age=600)
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+# DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -116,10 +131,21 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
-# Option 1
-CORS_ORIGIN_WHITELIST = [
-    'https://localhost:3000',
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'build/static')
 ]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Option 2
-CORS_ORIGIN_ALLOW_ALL = False
+# # Whitelist localhost:3000 because that's where frontend will be served
+# CORS_ORIGIN_WHITELIST = [
+#     'https://localhost:3000',
+# ]
+
+CORS_ORIGIN_ALLOW_ALL = True
+
+# Activate Django-Heroku.
+django_heroku.settings(locals())
+options = DATABASES['default'].get('OPTIONS', {})
+options.pop('sslmode', None)
